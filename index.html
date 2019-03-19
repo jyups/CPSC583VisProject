@@ -16,7 +16,7 @@
 
     function parallelCoord(){
         // set the dimensions and margins of the graph
-        var margin = {top: 30, right: 10, bottom: 10, left: 0},
+        var margin = {top: 30, right: 5, bottom: 10, left: 0},
             width = 500 - margin.left - margin.right,
             height = 400 - margin.top - margin.bottom;
 
@@ -33,7 +33,7 @@
         d3.csv('Wong1.csv').then(function(data) {
 
             // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
-            dimensions = ["days", "duration", "sex", "age", "piq", "viq"]
+            dimensions = ["duration", "sex", "age"]
 
             // For each dimension, I build a linear scale. I store all in a y object
             var y = {}
@@ -62,7 +62,7 @@
                 .enter().append("path")
                 .attr("d",  path)
                 .style("fill", "none")
-                .style("stroke", "#69b3a2")
+                .style("stroke", "#FFADB1")
                 .style("opacity", 0.5)
 
             // Draw the axis:
@@ -86,7 +86,7 @@
 
     function scatterPlot() {
         // set the dimensions and margins of the graph
-        var margin = {top: 10, right: 30, bottom: 30, left: 60},
+        var margin = {top: 10, right: 30, bottom: 30, left: 30},
             width = 460 - margin.left - margin.right,
             height = 400 - margin.top - margin.bottom;
         // append the svg object to the body of the page
@@ -124,7 +124,7 @@
                 .attr("cx", function(d) {return x(d.days); })
                 .attr("cy", function(d) {return y(d.iq); })
                 .attr("r", 1.5)
-                .style("fill", "#69b3a2")
+                .style("fill", "#ffadb1")
         })
     }
 </script>
