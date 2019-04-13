@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v5.js"></script>
+<!-- Create a div where the graph will take place -->
+<head>
+    <title>Jackie Yu CPSC 583 Visualization Project</title>
+</head>
+<h1>Post-Coma Recovery of IQ</h1>
+<div class='my-legend'>
+    <div class='legend-title'>Number of Tests a Patient has Done</div>
+    <div class='legend-scale'>
+        <ul class='legend-labels'>
+            <li><span style='background:#112F41;'></span>One</li>
+            <li><span style='background:#0894A1;'></span>Two</li>
+            <li><span style='background:#47AB6C;'></span>Three</li>
+            <li><span style='background:#F2B134;'></span>Four</li>
+            <li><span style='background:#ED553B;'></span>Five</li>
+        </ul>
+    </div>
+</div>
+
+<style type='text/css'>
+    .my-legend .legend-title {
+        text-align: left;
+        margin-bottom: 5px;
+        font-weight: bold;
+        font-size: 90%;
+    }
+    .my-legend .legend-scale ul {
+        margin: 0;
+        margin-bottom: 5px;
+        padding: 0;
+        float: left;
+        list-style: none;
+    }
+    .my-legend .legend-scale ul li {
+        font-size: 80%;
+        list-style: none;
+        margin-left: 0;
+        line-height: 18px;
+        margin-bottom: 2px;
+    }
+    .my-legend ul.legend-labels li span {
+        display: block;
+        float: left;
+        height: 13px;
+        width: 30px;
+        margin-right: 5px;
+        margin-left: 0;
+        border: 1px solid #999;
+    }
+
+</style>
+<div id="wrapper" style="display:flex">
+    <div id="vis_data"></div>
+    <div id="vis_data_sp"></div>
+</div>
+
+
+<script>
+    //**************************//
+    //     PARALLEL COORD       //
+    //**************************//
+    // set the dimensions and margins of the graph
+    var margin = {top: 30, right: 5, bottom: 10, left: 0},
+        width = 500 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var svg = d3.select("#vis_data")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    // Parse the Data
+    d3.csv('Wong2.csv').then(function(data) {
+
+        var color = d3.scaleOrdinal()
+            .domain(["one", "two", "three", "four", "five"])
+            .range(["#112F41", "#0894A1", "#47AB6C", "#F2B134", "#ED553B"])
+
+        // Extract the list of dimensions to plot
+        dimensions = ["days", "duration", "sex", "age", "piq", "viq"]
+
+        // Make linear scale for each ^; Store in y
+        var y = {}
+        for (i in dimensions) {
+            name = dimensions[i]
+            y[name] = d3.scaleLinear()
+                .domain( d3.extent(data, function(d) { return +d[name]; }) )
+                .range([height, 0])
+        }
+
+        // Make X-scale then find position for Y-axis
+        x = d3.scalePoint()
+            .range([0, width])
+            .padding(1)
+            .domain(dimensions);
+
+        // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
+        function path(d) {
+            return d3.line()(dimensions.map(function(p) { return [x(p), y[p](d[p])]; }));
+        }
+
+        // Draw the lines
+        svg.selectAll("myPath")
+            .data(data)
+            .enter().append("path")
+            .attr("class", function(d){return "line " + d.tests})
+            .attr("d", path)
+            .style("fill", "none")
+            .style("stroke", function(d){return (color(d.tests))})
+            .style("opacity", 0.5)
+            .on("mouseover", function(d){onHighlight(d)})
+            .on("mouseleave", function(d){onUnhighlight(d)})
+
+        // Draw the axis:
+        svg.selectAll("myAxis")
+        // For each dimension of the dataset I add a 'g' element:
+            .data(dimensions).enter()
+            .append("g")
+            // I translate this element to its right position on the x axis
+            .attr("transform", function(d) { return "translate(" + x(d) + ")"; })
+            // And I build the axis with the call function
+            .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y[d])); })
+            // Add axis title
+            .append("text")
+            .style("text-anchor", "middle")
+            .attr("y", -9)
+            .text(function(d) { return d; })
+            .style("fill", "black")
+
+
+        // Brushing (highlight)
+        var onHighlight = function(d){
+            // Make unfocused points grey
+            d3.selectAll(".line")
+                .transition().duration(200)
+                .style("stroke", "lightgrey")
+                .style("opacity", "0.2")
+
+            // Make focused points coloured
+            d3.select("#vis_data").selectAll("." + d.tests)
+                .transition().duration(200)
+                .style("stroke", color(d.tests))
+                .style("opacity", "1")
+
+            d3.select("#vis_data_sp").selectAll(".line")
+                .transition().duration(200)
+                .style("stroke", color(d.tests))
+                .style("opacity", "1")
+        }
+
+        // Removing highlight
+        var onUnhighlight = function(d){
+            d3.select("#vis_data").selectAll(".line")
+                .transition().duration(200).delay(1000)
+                .style("stroke", function(d){return(color(d.tests))})
+                .style("opacity", "1")
+            /*
+            d3.select("#vis_data_sp").selectAll(".line")
+                .transition().duration(200).delay(1000)
+                .attr("stroke", function(){return d.color = color(d.values);})*/
+        }
+    })
+
+    // *************************************** //
+    //               SCATTERPLOT               //
+    //**************************************** //
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 30, bottom: 30, left: 30},
+        width = 500 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+
+    // append the svg object
+    var svg2 = d3.select("#vis_data_sp")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("Wong3.csv").then(function(data) {
+        var color = d3.scaleOrdinal()
+            .domain(["two", "three", "four", "five"])
+            .range(["#0894A1", "#47AB6C", "#F2B134", "#ED553B"])
+
+        var x = d3.scaleLinear().range([0, width]);
+        var y = d3.scaleLinear().range([height, 0]);
+
+        x.domain(d3.extent(data, function(d) {return d.days; }));
+        y.domain([0, d3.max(data, function(d) {return d.iq;})]);
+
+        // Creating the Y-axis
+        var y = d3.scaleLinear()
+            .domain([55,135])
+            .range([height, 0]);
+        svg2.append("g")
+            .call(d3.axisLeft(y));
+
+        // Creating the X-axis
+        var x = d3.scaleLinear()
+            .domain([0, 4000])
+            .range([0, width]);
+        svg2.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Defining the line
+        var linePlot = d3.line()
+            .x(function(d){return x(d.days);})
+            .y(function(d){return y(d.iq);});
+
+        var dataNest = d3.nest()
+            .key(function(d) {return d.id;})
+            .entries(data);
+
+        //console.log(dataNest);
+
+        dataNest.forEach(function(d){
+            svg2.append("path")
+                .attr("class", function() {return "line " + d.tests})
+                .style("stroke", function(){return d.color = color(d.values);})
+                .attr("d", linePlot(d.values))
+                .attr("fill", "none")
+                .attr("stroke-width", "2")
+                .attr("opacity", "0.5")
+                .on("mouseover", function() {onHighlight(d)})
+                .on("mouseleave", function(){onUnhighlight(d)})
+        });
+
+        var onHighlight = function(d){
+            console.log(d);
+            selected_pt = d.values[0].tests
+            console.log(selected_pt);
+            // Make unfocused points grey
+            d3.selectAll(".line")
+                .transition().duration(200)
+                .style("stroke", "lightgrey")
+                .style("opacity", "0.2")
+
+            // Make focused points coloured
+            d3.select("#vis_data").selectAll("." + selected_pt)
+                .transition().duration(200)
+                .style("stroke", color(selected_pt))
+                .style("opacity", "1")
+
+            d3.select("#vis_data_sp").selectAll(d.values[0] === selected_pt)
+                .transition().duration(200)
+                .style("stroke", color(selected_pt))
+                .style("opacity", "1")
+        }
+
+        // Removing highlight
+        var onUnhighlight = function(d){
+            d3.select("#vis_data").selectAll(".line")
+                .transition().duration(200).delay(1000)
+                .style("stroke", function(d){return(color(d.tests))})
+                .style("opacity", "1")
+
+            d3.select("#vis_data_sp").selectAll(".line")
+                .transition().duration(200).delay(1000)
+                .attr("stroke", function(){return d.color = color(d.values);})
+        }
+
+        // Creating the dots
+        svg2.append("g")
+            .selectAll("dot")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) {return x(d.days); })
+            .attr("cy", function(d) {return y(d.iq); })
+            .attr("r", 3.0)
+            .style("fill", function(d) {return color(d.tests)})
+    })
+</script>
