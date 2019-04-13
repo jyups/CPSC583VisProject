@@ -204,6 +204,14 @@
         svg2.append("g")
             .call(d3.axisLeft(y));
 
+        svg2.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("IQ");
+
         // Creating the X-axis
         var x = d3.scaleLinear()
             .domain([0, 4000])
@@ -211,6 +219,13 @@
         svg2.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x));
+
+        svg2.append("text")
+            .attr("transform",
+                "translate(" + (width/2) + " ," +
+                (height + margin.top + 20) + ")")
+            .style("text-anchor", "middle")
+            .text("Day Test Administered Post-Coma");
 
         // Defining the line
         var linePlot = d3.line()
